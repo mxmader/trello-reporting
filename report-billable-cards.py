@@ -54,6 +54,9 @@ my_board_cards = json.loads(result.text)
 total_hrs = 0
 
 table = PrettyTable(["Card Name", "Hours"])
+if '--plain-output' in sys.argv:
+    table.border = False
+
 table.align["Card Name"] = 'l'
 
 for card in my_board_cards:
