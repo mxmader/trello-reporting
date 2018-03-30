@@ -10,46 +10,55 @@ try:
     api_key = os.environ['trello_api_key']
     user_token = os.environ['trello_user_token']
     invoice_board = os.environ['trello_invoice_board']
+    invoice_list = os.environ['trello_invoice_list']
 
 except KeyError as e:
     print "Environment variable not set: %s" % e
     sys.exit(1)
 
 invoice_board_id = None
-
+invoice_list_id = None
+s = requests.Session()
+s.headers = {
+	'content-type':'application/json'
+}
 params = {
 	'key' : api_key,
 	'token' : user_token
 }
 
-headers = {
-	'content-type':'application/json'
-}
+def get_objects(url):
+    try:
+        result = s.get(url, params=params)
+        result.raise_for_status()
+        return result.json()
+    except:
+        print 'could not fetch objects from {}; exiting'.format(url)
+        sys.exit(1)
 
-my_boards_url = 'https://api.trello.com/1/members/me/boards'
+trello_api_url = 'https://api.trello.com/1'
+my_boards_url = '{}/members/me/boards'.format(trello_api_url)
 
-result = requests.get(my_boards_url, params=params, headers=headers)
-
-if result.status_code == requests.codes.ok:
-    my_boards = json.loads(result.text)
-else:
-    print "error: %s" % result.status_code
-    sys.exit(1)
-
-for board in my_boards:
+for board in get_objects(my_boards_url):
     if board['name'] == invoice_board:
         invoice_board_id = board['id']
 
 if not invoice_board_id:
-    print "couldn't find ID for board: %s" % invoice_board
+    print 'could not find ID for board {}'.format(invoice_board)
+    sys.exit(1)
+    
+my_board_lists_url = '{}/boards/{}/lists'.format(trello_api_url, invoice_board_id)
+
+for board_list in get_objects(my_board_lists_url):
+    if board_list['name'] == invoice_list:
+        invoice_list_id = board_list['id']
+        
+if not invoice_list_id:
+    print 'could not find ID for list {} in board {}'.format(invoice_list, invoice_board)
     sys.exit(1)
 
-#print "looking for billable cards in board: %s (id = %s)" % (invoice_board, invoice_board_id)
-my_board_cards_url = "https://api.trello.com/1/boards/%s/cards" % invoice_board_id
-
-result = requests.get(my_board_cards_url, params=params, headers=headers)
-
-my_board_cards = json.loads(result.text)
+my_list_cards_url = 'https://api.trello.com/1/lists/{}/cards'.format(invoice_list_id)
+my_list_cards = get_objects(my_list_cards_url)
 
 total_hrs = 0
 
@@ -59,7 +68,7 @@ if '--plain-output' in sys.argv:
 
 table.align["Card Name"] = 'l'
 
-for card in my_board_cards:
+for card in my_list_cards:
 
     card_billable = False
     card_hrs = 0
@@ -74,10 +83,10 @@ for card in my_board_cards:
             total_hrs += card_hrs
 
     if card_billable:
-        #print card['name'], card_hrs
+        print '-', card['name']
         table.add_row([card['name'], card_hrs])
 
-print table
+#print table
 print ""
 print "total hrs:", total_hrs
 print ""
