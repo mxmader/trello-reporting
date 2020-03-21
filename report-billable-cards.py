@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 from prettytable import PrettyTable
 import json
@@ -13,7 +13,7 @@ try:
     invoice_list = os.environ['trello_invoice_list']
 
 except KeyError as e:
-    print "Environment variable not set: %s" % e
+    print("Environment variable not set: ", str(e))
     sys.exit(1)
 
 invoice_board_id = None
@@ -33,7 +33,7 @@ def get_objects(url):
         result.raise_for_status()
         return result.json()
     except:
-        print 'could not fetch objects from {}; exiting'.format(url)
+        print('could not fetch objects from {}; exiting'.format(url))
         sys.exit(1)
 
 trello_api_url = 'https://api.trello.com/1'
@@ -44,7 +44,7 @@ for board in get_objects(my_boards_url):
         invoice_board_id = board['id']
 
 if not invoice_board_id:
-    print 'could not find ID for board {}'.format(invoice_board)
+    print('could not find ID for board {}'.format(invoice_board))
     sys.exit(1)
     
 my_board_lists_url = '{}/boards/{}/lists'.format(trello_api_url, invoice_board_id)
@@ -54,7 +54,7 @@ for board_list in get_objects(my_board_lists_url):
         invoice_list_id = board_list['id']
         
 if not invoice_list_id:
-    print 'could not find ID for list {} in board {}'.format(invoice_list, invoice_board)
+    print('could not find ID for list {} in board {}'.format(invoice_list, invoice_board))
     sys.exit(1)
 
 my_list_cards_url = 'https://api.trello.com/1/lists/{}/cards'.format(invoice_list_id)
@@ -83,10 +83,10 @@ for card in my_list_cards:
             total_hrs += card_hrs
 
     if card_billable:
-        print '-', card['name']
+        print('-', card['name'])
         table.add_row([card['name'], card_hrs])
 
-#print table
-print ""
-print "total hrs:", total_hrs
-print ""
+#print(table)
+print("")
+print("total hrs:", total_hrs)
+print("")
